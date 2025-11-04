@@ -20,7 +20,8 @@ int main(int argc, char **argv, char **env) {
     top->rst = 1;
     top->en = 0;
     
-    int clk_of_nine = 0;
+    int pause_counter = 0;  // Add counter for pause duration
+    bool is_paused = false; // Add flag to track pause state
     // run simulation for many clock cycles
     for (i=0; i<300; i++) {
 
@@ -30,21 +31,26 @@ int main(int argc, char **argv, char **env) {
             top->clk =!top->clk;
             top->eval ();
         }
-        /*top->rst = (i<2) | (i==15);
+        
+        top->rst = (i<2) | (i==15);
         top->en = (i>4);
-        */
         
-        // Challenge : Stop counting for 3 cycles once the counter reaches 0x9, and then resume counting
-        if (top->count == 0b00001001) {
-            if(clk_of_nine == 0){
-                clk_of_nine = i;
-                top->en = 0;
-            }
+        // Stop counting for 3 cycles at 9
+        if (top->count == 0x9 && !is_paused) {
+            is_paused = true;
+            pause_counter = 0;
+        }
         
-            else if (i == clk_of_nine + 2) {
-                top->en = 1;
+        if (is_paused) {
+            top->en = 0;  // Disable counting
+            pause_counter++;
+            
+            if (pause_counter >= 3) {
+                is_paused = false;
+                top->en = 1;  // Re-enable counting
             }
-        }   
+        }
+        
         if (Verilated::gotFinish()) exit(0);
     }
     tfp->close();
